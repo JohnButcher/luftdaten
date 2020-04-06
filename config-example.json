@@ -1,0 +1,5 @@
+{"archive_url": "https://archive.luftdaten.info",
+ "sensor_csv_suffix":  "pms5003_sensor_99999.csv",
+ "relevant_columns":  ["timestamp", "P1", "P2"],
+ "column_renames": {"P1":"PM10","P2":"PM2.5"},
+ "index_column": "timestamp"}
