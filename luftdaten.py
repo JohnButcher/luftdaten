@@ -59,18 +59,12 @@ def push_to_s3(html_file, config):
             print(e)
 
 
-def plot_period_line(df, now, config, days):
+def plot_period_line(df, now, config, html_file, title, show, mode='line'):
 
-    begin_date = now - timedelta(days=days)
-    end_date = now - timedelta(days=1)
-    df = df[(df.index > begin_date) & (df.index <= end_date)]
-    df = df.sort_index(axis=0)
-
-    html_file = f"luftdaten_{days}.html"
     traces = []
     for stat in df.columns:
 
-        t = go.Scatter(x=df.index, y=df[stat], name=stat, mode='lines')
+        t = go.Scatter(x=df.index, y=df[stat], name=stat, mode='lines') if mode == 'line' else go.Bar(x=df.index, y=df[stat], name=stat)
         traces.append(t)
 
     # add some threshold line text
@@ -88,11 +82,11 @@ def plot_period_line(df, now, config, days):
 
     # layout and title
 
-    title = "{0} over last {1} days, source <a href='{2}'>{2}</a>".\
-            format(config['sensor_csv_suffix'], days, config['archive_url'])
+    title = "{0} [{1}], source <a href='{2}'>{2}</a>".\
+            format(title, config['sensor_csv_suffix'].split('.')[0], config['archive_url'])
 
     layout = go.Layout(title=title,
-                       xaxis=dict(title='timestamp',
+                       xaxis=dict(title=df.index.name,
                                   titlefont=dict(family='Courier New, monospace', size=14, color='#7f7f7f')),
                        yaxis=dict(title='Count',
                                   titlefont=dict(family='Courier New, monospace', size=14, color='#7f7f7f'))
@@ -107,9 +101,9 @@ def plot_period_line(df, now, config, days):
         col, val, descrip = threshold['column'], threshold['value'], threshold['description']
         fig.add_shape(
             type="line",
-            x0=df.index.min(),
+            x0=df.index[0],
             y0=val,
-            x1=df.index.max(),
+            x1=df.index[-1],
             y1=val,
             line=dict(
                 color="LightSeaGreen",
@@ -121,7 +115,25 @@ def plot_period_line(df, now, config, days):
     # write to file
     pyoff.plot(fig, filename=html_file, auto_open=False, include_plotlyjs='cdn')
 
-    return fig, html_file
+    # open browser
+    if show:
+        fig.show()
+
+    return fig
+
+
+def ampm(hour):
+
+    if hour == 0:
+        ret = "midnight"
+    elif hour == 12:
+        ret ="noon"
+    elif hour <= 11:
+        ret = str(int(hour))+" a.m."
+    else:
+        ret = str(abs(int(12-hour)))+" p.m."
+
+    return ret
 
 def main():
 
@@ -146,11 +158,35 @@ def main():
 
     for period_days in (7, 30):
 
-        fig, html_file = plot_period_line(df, now, config, period_days)
+        pdf = df
+        begin_date = now - timedelta(days=period_days)
+        end_date = now - timedelta(days=1)
+        pdf = pdf[(df.index > begin_date) & (df.index <= end_date)]
+        pdf = pdf.sort_index(axis=0)
+
+        title = f"Luftdaten time series for last {period_days} days"
+        html_file = title.lower().replace(" ","_") + ".html"
+        fig = plot_period_line(pdf, now, config, html_file, title, args.show, 'line')
         push_to_s3(html_file, config)
-        # open browser
-        if args.show:
-            fig.show()
+
+        pdf_daily = pdf.groupby(pdf.index.floor('D')).mean()
+        pdf_daily.index = pdf_daily.index.rename('day')
+        title = f"Luftdaten daily averages for last {period_days} days"
+        html_file = title.lower().replace(" ","_") + ".html"
+        fig = plot_period_line(pdf_daily, now, config, html_file, title, args.show, 'bar')
+        push_to_s3(html_file, config)
+
+        pdf_hourly = pdf.groupby(pdf.index.hour).mean()
+        pdf_hourly = pdf_hourly.reset_index()
+
+        pdf_hourly['hour_of_day'] = pdf_hourly.apply(lambda x: ampm(x.timestamp),axis=1)
+        pdf_hourly = pdf_hourly.set_index('hour_of_day', drop=True)
+        pdf_hourly = pdf_hourly.drop('timestamp', axis=1)
+
+        title = f"Luftdaten hourly averages for last {period_days} days"
+        html_file = title.lower().replace(" ","_") + ".html"
+        fig = plot_period_line(pdf_hourly, now, config, html_file, title, args.show, 'bar')
+        push_to_s3(html_file, config)
 
 
 if __name__ == "__main__":
