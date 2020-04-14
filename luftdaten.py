@@ -17,14 +17,24 @@ def get_data(now, config, days):
     while day <= end_date:
 
         yyyy_mm_dd = day.strftime("%Y-%m-%d")
-        url = f"{config['archive_url']}/{yyyy_mm_dd}/{yyyy_mm_dd}_{config['sensor_csv_suffix']}"
-        print(f"Fetching archive from {url}")
+        csv_filepath = f"{yyyy_mm_dd}/{yyyy_mm_dd}_{config['sensor_csv_suffix']}"
+        local_path = os.path.join(config['data_dir'], csv_filepath)
         day = day + timedelta(days=1)
-        try:
-            df = pd.read_csv(url, delimiter=';')
-        except Exception as e:
-            print(e)
-            continue
+
+        if os.path.exists(local_path):
+            print(f"Reading data from local file {local_path}")
+            df = pd.read_csv(local_path, delimiter=';')
+        else:
+            url = f"{config['archive_url']}/{csv_filepath}"
+            print(f"Fetching archive from {url}")
+
+            try:
+                df = pd.read_csv(url, delimiter=';')
+                os.makedirs(os.path.dirname(local_path), exist_ok=True)
+                df.to_csv(local_path, index=False, sep=';')
+            except Exception as e:
+                print(e)
+                continue
 
         if day != begin_date:
             all_df = all_df.append(df)
@@ -140,21 +150,16 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--show", default=False, action="store_true", help="Show figures in browser")
     args = parser.parse_args()
-    args.show = True
+    #args.show = True
 
     with open(os.path.join(os.path.dirname(__file__),'config.json')) as c:
         config = json.loads(c.read())
+
+    os.makedirs(config['data_dir'],exist_ok=True)
+
     now = datetime.now()
 
-    test_data_file = "/tmp/luftdaten_df.csv"
-    if os.path.exists(test_data_file):
-        print(f"getting data from test data file {test_data_file}")
-        df = pd.read_csv(test_data_file)
-        df['timestamp'] = pd.to_datetime(df['timestamp'])
-        df = df.set_index('timestamp')
-    else:
-        df = get_data(now, config, 30)
-        df.to_csv(test_data_file)
+    df = get_data(now, config, 30)
 
     for period_days in (7, 30):
 

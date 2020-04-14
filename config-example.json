@@ -1,6 +1,9 @@
 {"archive_url": "https://archive.luftdaten.info",
+ "data_dir": "data",
  "sensor_csv_suffix":  "pms5003_sensor_99999.csv",
  "relevant_columns":  ["timestamp", "P1", "P2"],
  "column_renames": {"P1":"PM10","P2":"PM2.5"},
+  "thresholds": [{"column":"PM2.5", "value": 25, "description": "daily average safe level"},
+                {"column":"PM10", "value": 50, "description": "daily average safe level"}],
  "s3bucket": "mys3bucket",
  "s3dir": "mys3prefix"}
