@@ -27,5 +27,8 @@ pipenv install
 pipenv run python luftdaten.py --show
 ```
 
+## Example screenshot
+
+![Hourly pattern](screenshot.png)
 
 
