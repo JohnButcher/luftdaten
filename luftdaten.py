@@ -167,7 +167,7 @@ def main():
 
     df = get_data(now, config, 30)
 
-    for period_days in (7, 30):
+    for period_days in (7, 30, 366):
 
         pdf = df
         begin_date = now - timedelta(days=period_days)
