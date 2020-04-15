@@ -1,5 +1,7 @@
 {"archive_url": "https://archive.luftdaten.info",
  "data_dir": "data",
+ "output_dir": "/tmp",
+ "first_tx_yyyy_mm_dd": "2020_04_02",
  "sensor_csv_suffix":  "pms5003_sensor_99999.csv",
  "relevant_columns":  ["timestamp", "P1", "P2"],
  "column_renames": {"P1":"PM10","P2":"PM2.5"},

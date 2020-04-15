@@ -10,6 +10,12 @@ def get_data(now, config, days):
 
     begin_date = now - timedelta(days=days)
     end_date = now - timedelta(days=1)
+
+    first_tx = datetime.strptime(config.get('first_tx_yyyy_mm_dd','1970_01_01'),'%Y_%m_%d')
+    if first_tx > begin_date:
+        print(f"Adjusting begin date to match first transmission date {first_tx.strftime('%Y_%m_%d')}")
+        begin_date = first_tx
+
     print (f"Date range to fetch will be {begin_date.strftime('%Y-%m-%d')} to {end_date.strftime('%Y-%m-%d')}")
 
     all_df = pd.DataFrame()
@@ -170,14 +176,14 @@ def main():
         pdf = pdf.sort_index(axis=0)
 
         title = f"Luftdaten time series for last {period_days} days"
-        html_file = title.lower().replace(" ","_") + ".html"
+        html_file = os.path.join(config.get('output_dir',''),title.lower().replace(" ","_") + ".html")
         fig = plot_period_line(pdf, now, config, html_file, title, args.show, 'line')
         push_to_s3(html_file, config)
 
         pdf_daily = pdf.groupby(pdf.index.floor('D')).mean()
         pdf_daily.index = pdf_daily.index.rename('day')
         title = f"Luftdaten daily averages for last {period_days} days"
-        html_file = title.lower().replace(" ","_") + ".html"
+        html_file = os.path.join(config.get('output_dir',''),title.lower().replace(" ","_") + ".html")
         fig = plot_period_line(pdf_daily, now, config, html_file, title, args.show, 'bar')
         push_to_s3(html_file, config)
 
@@ -189,7 +195,7 @@ def main():
         pdf_hourly = pdf_hourly.drop('timestamp', axis=1)
 
         title = f"Luftdaten hourly averages for last {period_days} days"
-        html_file = title.lower().replace(" ","_") + ".html"
+        html_file = os.path.join(config.get('output_dir',''),title.lower().replace(" ","_") + ".html")
         fig = plot_period_line(pdf_hourly, now, config, html_file, title, args.show, 'bar')
         push_to_s3(html_file, config)
 
