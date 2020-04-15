@@ -1,6 +1,6 @@
 # luftdaten
 Collect your sensor's luftdaten archive data and plot.<br>
-Based on particulate counts for PM2.5 and PM10 using a PMS5003 sensor but it may work for other sensor data.
+Based on particulate counts for PM2.5 and PM10 using a PMS5003 sensor but it may work for other sensor data.<br>
 Developed on Python 3.7
 
 ## Features
