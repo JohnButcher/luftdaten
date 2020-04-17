@@ -202,8 +202,8 @@ def main():
         pdf_hourly = pdf_hourly.drop('timestamp', axis=1)
 
         title = f"Luftdaten hourly averages for last {period_days} days"
-        base_html = os.path.basename(html_file)
         html_file = os.path.join(config.get('output_dir',''),title.lower().replace(" ","_") + ".html")
+        base_html = os.path.basename(html_file)
         fig = plot_period_line(pdf_hourly, now, config, html_file, title, args.show, 'bar')
         push_to_s3(html_file, config)
         idx.write(f"\n<h3><a href={base_html}>{title}</a></h3>\n")
