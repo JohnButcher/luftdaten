@@ -167,6 +167,9 @@ def main():
 
     df = get_data(now, config, 30)
 
+    index_file = os.path.join(config.get('output_dir',''),'index.html')
+    idx = open(index_file,'w')
+    idx.write("""<html><head><title>Luftdaten plots</title></head><body>""")
     for period_days in (7, 30, 366):
 
         pdf = df
@@ -177,15 +180,19 @@ def main():
 
         title = f"Luftdaten time series for last {period_days} days"
         html_file = os.path.join(config.get('output_dir',''),title.lower().replace(" ","_") + ".html")
+        base_html = os.path.basename(html_file)
         fig = plot_period_line(pdf, now, config, html_file, title, args.show, 'line')
         push_to_s3(html_file, config)
+        idx.write(f"\n<h3><a href={base_html}>{title}</a></h3>\n")
 
         pdf_daily = pdf.groupby(pdf.index.floor('D')).mean()
         pdf_daily.index = pdf_daily.index.rename('day')
         title = f"Luftdaten daily averages for last {period_days} days"
         html_file = os.path.join(config.get('output_dir',''),title.lower().replace(" ","_") + ".html")
+        base_html = os.path.basename(html_file)
         fig = plot_period_line(pdf_daily, now, config, html_file, title, args.show, 'bar')
         push_to_s3(html_file, config)
+        idx.write(f"\n<h3><a href={base_html}>{title}</a></h3>\n")
 
         pdf_hourly = pdf.groupby(pdf.index.hour).mean()
         pdf_hourly = pdf_hourly.reset_index()
@@ -195,9 +202,15 @@ def main():
         pdf_hourly = pdf_hourly.drop('timestamp', axis=1)
 
         title = f"Luftdaten hourly averages for last {period_days} days"
+        base_html = os.path.basename(html_file)
         html_file = os.path.join(config.get('output_dir',''),title.lower().replace(" ","_") + ".html")
         fig = plot_period_line(pdf_hourly, now, config, html_file, title, args.show, 'bar')
         push_to_s3(html_file, config)
+        idx.write(f"\n<h3><a href={base_html}>{title}</a></h3>\n")
+
+    idx.write("\n</body></html>")
+    idx.close()
+    push_to_s3(index_file, config)
 
 
 if __name__ == "__main__":
