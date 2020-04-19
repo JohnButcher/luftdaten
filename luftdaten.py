@@ -164,6 +164,7 @@ def main():
     os.makedirs(config['data_dir'],exist_ok=True)
 
     now = datetime.now()
+    dayOfWeek = {0: 'Monday', 1: 'Tuesday', 2: 'Wednesday', 3: 'Thursday', 4: 'Friday', 5: 'Saturday', 6: 'Sunday'}
 
     df = get_data(now, config, 30)
 
@@ -207,6 +208,17 @@ def main():
         fig = plot_period_line(pdf_hourly, now, config, html_file, title, args.show, 'bar')
         push_to_s3(html_file, config)
         idx.write(f"\n<h3><a href={base_html}>{title}</a></h3>\n")
+
+        dow_df = pdf.groupby(pdf.index.dayofweek.map(dayOfWeek)).mean()
+        dow_df = dow_df.rename(columns={"timestamp": "day_of_week"})
+
+        title = f"Luftdaten day of week averages for last {period_days} days"
+        html_file = os.path.join(config.get('output_dir',''),title.lower().replace(" ","_") + ".html")
+        base_html = os.path.basename(html_file)
+        fig = plot_period_line(dow_df, now, config, html_file, title, args.show, 'bar')
+        push_to_s3(html_file, config)
+        idx.write(f"\n<h3><a href={base_html}>{title}</a></h3>\n")
+
 
     idx.write("\n</body></html>")
     idx.close()
