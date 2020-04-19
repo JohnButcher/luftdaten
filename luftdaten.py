@@ -210,7 +210,8 @@ def main():
         idx.write(f"\n<h3><a href={base_html}>{title}</a></h3>\n")
 
         dow_df = pdf.groupby(pdf.index.dayofweek.map(dayOfWeek)).mean()
-        dow_df = dow_df.rename(columns={"timestamp": "day_of_week"})
+        dow_df['day_of_week'] = dow_df.index
+        dow_df = dow_df.set_index('day_of_week', drop=True)
 
         title = f"Luftdaten day of week averages for last {period_days} days"
         html_file = os.path.join(config.get('output_dir',''),title.lower().replace(" ","_") + ".html")
