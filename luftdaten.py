@@ -177,7 +177,7 @@ def main():
     dayOfWeek = {0: 'Monday', 1: 'Tuesday', 2: 'Wednesday', 3: 'Thursday', 4: 'Friday', 5: 'Saturday', 6: 'Sunday'}
 
     df = get_data(now, config, 366, args.ewm)
-    df.to_csv('/tmp/luft.csv')
+    #df.to_csv('/tmp/luft.csv')
 
     index_file = os.path.join(config.get('output_dir',''),'index.html')
     idx = open(index_file,'w')
