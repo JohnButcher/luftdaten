@@ -6,7 +6,7 @@ from datetime import datetime, timedelta
 from botocore.exceptions import ClientError
 
 
-def get_data(now, config, days):
+def get_data(now, config, days, ewm_alpha):
 
     begin_date = now - timedelta(days=days)
     end_date = now - timedelta(days=1)
@@ -53,6 +53,11 @@ def get_data(now, config, days):
         df = df.rename(columns=config['column_renames'])
         df['timestamp'] = pd.to_datetime(df['timestamp'])
         df = df.set_index('timestamp')
+
+        # ref: https://kanoki.org/2020/04/23/how-to-remove-outliers-in-python/
+        if ewm_alpha > 0:
+            for c in df.columns:
+                df[c] = df[c].ewm(alpha=ewm_alpha).mean()
 
     return df
 
@@ -155,6 +160,7 @@ def main():
 
     parser = argparse.ArgumentParser()
     parser.add_argument("--show", default=False, action="store_true", help="Show figures in browser")
+    parser.add_argument("--ewm", default=0.1, action="store", help="Exponential smoothing alpha value")
     args = parser.parse_args()
     #args.show = True
 
@@ -166,7 +172,8 @@ def main():
     now = datetime.now()
     dayOfWeek = {0: 'Monday', 1: 'Tuesday', 2: 'Wednesday', 3: 'Thursday', 4: 'Friday', 5: 'Saturday', 6: 'Sunday'}
 
-    df = get_data(now, config, 30)
+    df = get_data(now, config, 366, args.ewm)
+    df.to_csv('/tmp/luft.csv')
 
     index_file = os.path.join(config.get('output_dir',''),'index.html')
     idx = open(index_file,'w')
