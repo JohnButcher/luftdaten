@@ -59,6 +59,10 @@ def get_data(now, config, days, ewm_alpha):
             for c in df.columns:
                 df[c] = df[c].ewm(alpha=ewm_alpha).mean()
 
+        # backfill gaps in data, assuming a 3 minute period of data recording
+
+        df = df.resample('3min').fillna("backfill")
+
     return df
 
 
