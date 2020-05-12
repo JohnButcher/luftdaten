@@ -1,6 +1,6 @@
 """Script to collect data from your luftdaten online sensor archive and plot"""
 
-import os, sys, pandas as pd, argparse, json, boto3, mimetypes
+import os, sys, pandas as pd, argparse, json, boto3, mimetypes, requests, io, urllib3
 import plotly.offline as pyoff, plotly.graph_objs as go
 from datetime import datetime, timedelta
 from botocore.exceptions import ClientError
@@ -35,7 +35,11 @@ def get_data(now, config, days, ewm_alpha):
             print(f"Fetching archive from {url}")
 
             try:
-                df = pd.read_csv(url, delimiter=';')
+                #df = pd.read_csv(url, delimiter=';') # fails with certificate hostname mismatchon archive.luftdaten.info
+                r = requests.get(url, verify=False)
+                r.encoding = 'utf-8'
+                csvio = io.StringIO(r.text, newline="")
+                df = pd.read_csv(csvio, delimiter=';')
                 os.makedirs(os.path.dirname(local_path), exist_ok=True)
                 df.to_csv(local_path, index=False, sep=';')
             except Exception as e:
@@ -168,6 +172,7 @@ def main():
     args = parser.parse_args()
     #args.show = True
 
+    urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
     with open(os.path.join(os.path.dirname(__file__),'config.json')) as c:
         config = json.loads(c.read())
 
