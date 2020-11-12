@@ -65,6 +65,7 @@ def get_data(now, config, days, ewm_alpha):
 
         # backfill gaps in data, assuming a 3 minute period of data recording
 
+        df = df.loc[~df.index.duplicated(keep='first')]
         df = df.resample('3min').fillna("backfill")
 
     return df
@@ -228,7 +229,8 @@ def main():
         dow_df = pdf.groupby(pdf.index.dayofweek.map(dayOfWeek)).mean()
         dow_df['day_of_week'] = dow_df.index
         dow_df = dow_df.set_index('day_of_week', drop=True)
-
+        dow_df = dow_df.set_index(pd.CategoricalIndex(dow_df.index,ordered=True,
+                                  categories=['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'])).sort_index()
         title = f"Luftdaten day of week averages for last {period_days} days"
         html_file = os.path.join(config.get('output_dir',''),title.lower().replace(" ","_") + ".html")
         base_html = os.path.basename(html_file)
