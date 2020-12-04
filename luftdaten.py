@@ -29,7 +29,11 @@ def get_data(now, config, days, ewm_alpha):
 
         if os.path.exists(local_path):
             print(f"Reading data from local file {local_path}")
-            df = pd.read_csv(local_path, delimiter=';')
+            try:
+                df = pd.read_csv(local_path, delimiter=';')
+            except Exception as e:
+                print(e)
+                os.remove(local_path)
         else:
             url = f"{config['archive_url']}/{csv_filepath}"
             print(f"Fetching archive from {url}")
@@ -44,6 +48,7 @@ def get_data(now, config, days, ewm_alpha):
                 df.to_csv(local_path, index=False, sep=';')
             except Exception as e:
                 print(e)
+                os.remove(local_path)
                 continue
 
         if day != begin_date:
