@@ -42,6 +42,9 @@ def get_data(now, config, days, ewm_alpha):
                 #df = pd.read_csv(url, delimiter=';') # fails with certificate hostname mismatchon archive.luftdaten.info
                 r = requests.get(url, verify=False)
                 r.encoding = 'utf-8'
+                if '<' in r.text:
+                   print("Something wrong with fetched file")
+                   continue
                 csvio = io.StringIO(r.text, newline="")
                 df = pd.read_csv(csvio, delimiter=';')
                 os.makedirs(os.path.dirname(local_path), exist_ok=True)
