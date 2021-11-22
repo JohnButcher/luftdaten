@@ -139,3 +139,7 @@ config.json
 # pycharm
 
 .idea
+
+# bespoke
+data/
+Pipfile.lock

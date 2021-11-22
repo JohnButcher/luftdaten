@@ -5,11 +5,23 @@ import plotly.offline as pyoff, plotly.graph_objs as go
 from datetime import datetime, timedelta
 from botocore.exceptions import ClientError
 
+def fetch(url):
 
-def get_data(now, config, days, ewm_alpha):
+    print(f"Fetching from {url}")
+    try:
+        r = requests.get(url, verify=False)
+    except Exception as e:
+        print(e)
+        return None
+    r.encoding = 'utf-8'
+    if '<' in r.text:
+        print("Something wrong with fetched file")
+        return None
+    return r
+
+def get_data(now, end_date, config, days, ewm_alpha):
 
     begin_date = now - timedelta(days=days)
-    end_date = now - timedelta(days=1)
 
     first_tx = datetime.strptime(config.get('first_tx_yyyy_mm_dd','1970_01_01'),'%Y_%m_%d')
     if first_tx > begin_date:
@@ -35,16 +47,16 @@ def get_data(now, config, days, ewm_alpha):
                 print(e)
                 os.remove(local_path)
         else:
-            url = f"{config['archive_url']}/{csv_filepath}"
-            print(f"Fetching archive from {url}")
+            archive_url = f"{config['archive_url']}/{csv_filepath}"
+            local_url = f"{config['local_url']}/{csv_filepath}"
 
             try:
                 #df = pd.read_csv(url, delimiter=';') # fails with certificate hostname mismatchon archive.luftdaten.info
-                r = requests.get(url, verify=False)
-                r.encoding = 'utf-8'
-                if '<' in r.text:
-                   print("Something wrong with fetched file")
-                   continue
+                r = fetch(local_url)
+                if not r:
+                    r = fetch(archive_url)
+                if not r:
+                    continue
                 csvio = io.StringIO(r.text, newline="")
                 df = pd.read_csv(csvio, delimiter=';')
                 os.makedirs(os.path.dirname(local_path), exist_ok=True)
@@ -188,9 +200,13 @@ def main():
     os.makedirs(config['data_dir'],exist_ok=True)
 
     now = datetime.now()
+    if not config.get('local_url'):
+        end_date = now - timedelta(days=1)
+    else:
+        end_date = now
     dayOfWeek = {0: 'Monday', 1: 'Tuesday', 2: 'Wednesday', 3: 'Thursday', 4: 'Friday', 5: 'Saturday', 6: 'Sunday'}
 
-    df = get_data(now, config, 366, args.ewm)
+    df = get_data(now, end_date, config, 366, args.ewm)
     #df.to_csv('/tmp/luft.csv')
 
     index_file = os.path.join(config.get('output_dir',''),'index.html')
@@ -200,7 +216,6 @@ def main():
 
         pdf = df
         begin_date = now - timedelta(days=period_days)
-        end_date = now - timedelta(days=1)
         pdf = pdf[(df.index > begin_date) & (df.index <= end_date)]
         pdf = pdf.sort_index(axis=0)
 
