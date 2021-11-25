@@ -39,7 +39,7 @@ def get_data(now, end_date, config, days, ewm_alpha):
         local_path = os.path.join(config['data_dir'], csv_filepath)
         day = day + timedelta(days=1)
 
-        if os.path.exists(local_path):
+        if os.path.exists(local_path) and day < end_date:
             print(f"Reading data from local file {local_path}")
             try:
                 df = pd.read_csv(local_path, delimiter=';')
